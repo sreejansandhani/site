@@ -179,34 +179,52 @@ ul {
    HERO SECTION
 ================================ */
 /* hero style */
-.hero {
+/* Events page hero with gradient overlay */
+.page-hero {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
   text-align: center;
+  min-height: 60vh;
   padding: 6rem 1rem;
   color: #fff;
-  background: var(--color-primary); /* fallback if no image */
-  min-height: 60vh;
+
+  /* Background: gradient overlay + fallback color */
+  background: linear-gradient(
+              rgba(0, 0, 0, 0.5),   /* top overlay */
+              rgba(0, 0, 0, 0.5)    /* bottom overlay */
+            ),
+            var(--color-secondary); /* fallback solid color */
+  background-size: cover;
+  background-position: center;
 }
 
-/* Events page hero (no background image, just color) */
-.page-hero {
-  background: var(--color-secondary); /* choose a brand color */
-}
-
-.hero h1 {
+.page-hero h1 {
   font-family: var(--font-heading);
   font-size: 2.5rem;
   margin-bottom: 1rem;
   text-transform: uppercase;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
 }
 
-.hero p {
+.page-hero p {
   font-size: 1.2rem;
   max-width: 700px;
   margin: 0 auto;
   line-height: 1.6;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 1s ease 0.3s, transform 1s ease 0.3s;
+}
+
+/* When visible (triggered by JS scroll logic) */
+.page-hero h1.animate-visible,
+.page-hero p.animate-visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 .hero-buttons a {
   margin: 0 0.5rem;
