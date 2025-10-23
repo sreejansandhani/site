@@ -96,6 +96,13 @@ ul {
   line-height: 1;             /* keeps text aligned with logo */
   white-space: nowrap;        /* prevents wrapping */
 }
+
+/* Hide logo text on mobile */
+@media (max-width: 600px) {
+  .logo-text {
+    display: none;
+  }
+}
 .nav-links {
   display: flex;
   gap: 1.5rem;
