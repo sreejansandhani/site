@@ -1,0 +1,22 @@
+/* Tailwind via CDN is included in HTML.
+   Put minor overrides and utility adds here. */
+:root {
+  --brand: #1e3a8a; /* indigo-800 */
+  --accent: #10b981; /* emerald-500 */
+}
+
+html, body {
+  height: 100%;
+}
+
+.backdrop-blur {
+  backdrop-filter: blur(6px);
+}
+
+.nav-sticky-shadow {
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+}
+
+.dark .card {
+  background: rgba(31,41,55,0.7);
+}
