@@ -1,769 +1,91 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Sreejan Sandhani — Firebase Auth + Sheet-driven CMS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sreejan Sandhani — Events & Sponsors</title>
+  <link href="assets/styles.css" rel="stylesheet" />
+  <link href="assets/animations.css" rel="stylesheet" />
+  <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    .modal-backdrop{background:rgba(0,0,0,0.45)}
-    .glass{backdrop-filter: blur(6px)}
-  </style>
-</head>
-<body class="bg-gray-50 text-gray-800">
-  <header class="bg-white shadow-sm sticky top-0 z-30">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16">
-        <div class="flex items-center gap-3">
-          <div class="text-2xl font-bold text-indigo-600">Sreejan Sandhani</div>
-          <div class="text-sm text-gray-500">CMS · Sponsorship · Firebase Auth</div>
-        </div>
-        <div class="flex items-center gap-3">
-          <button id="btn-enroll" class="hidden sm:inline-block bg-indigo-600 text-white px-3 py-2 rounded hover:bg-indigo-700">Sponsor / Enroll</button>
-          <div id="auth-area" class="flex items-center gap-3">
-            <button id="btn-login" class="bg-white border border-indigo-600 text-indigo-600 px-3 py-2 rounded hover:bg-indigo-50">Sign in with Google</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <main class="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
-    <div id="localnote" class="mb-4 p-3 rounded bg-yellow-50 border-l-4 border-yellow-300 text-sm text-yellow-800">
-      Authentication uses Firebase (Google Sign-In). Core master data (events, sponsors, pricing, enrollments snapshot) is read from published Google Sheets CSV endpoints. Transactional writes (new enrollments, local click increments, admin overrides) are simulated and persisted locally in this browser only (localStorage). You will be prompted before any local write.
-    </div>
-
-    <section class="mb-8">
-      <div class="flex items-start justify-between">
-        <h2 class="text-xl font-semibold">Upcoming Events</h2>
-        <div class="text-sm text-gray-500" id="cfg-last-updated"></div>
-      </div>
-      <div id="events" class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
-    </section>
-
-    <hr class="my-8" />
-
-    <section>
-      <div class="flex items-center justify-between">
-        <h2 class="text-xl font-semibold">Sponsors</h2>
-        <div class="text-sm text-gray-500">Click logos to record digital clicks (persisted locally)</div>
-      </div>
-      <div id="sponsor-grid" class="mt-4 grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"></div>
-    </section>
-
-    <hr class="my-8" />
-
-    <section id="admin-area" class="hidden">
-      <h2 class="text-xl font-semibold mb-3">Admin Mode</h2>
-      <div class="grid gap-6 md:grid-cols-3">
-        <div class="bg-white p-4 rounded shadow-sm">
-          <h3 class="font-medium">Event Fee Management</h3>
-          <p class="text-sm text-gray-600 mt-1">View/update event fee (simulated override saved locally)</p>
-          <div class="mt-3">
-            <label class="block text-sm text-gray-700">Event Fee (₹)</label>
-            <input id="event-fee" type="number" min="0" class="mt-1 w-full border rounded px-3 py-2" />
-            <div class="flex gap-2 mt-3">
-              <button id="save-fee" class="bg-indigo-600 text-white px-3 py-2 rounded">Save Fee</button>
-              <button id="reset-cfg" class="bg-gray-100 px-3 py-2 rounded">Reload Sheets</button>
-            </div>
-            <p class="text-xs text-gray-500 mt-2">Only Founder may perform simulated save if role restriction enforced by admin rules.</p>
-          </div>
-        </div>
-
-        <div class="bg-white p-4 rounded shadow-sm">
-          <h3 class="font-medium">Sponsor Tracking</h3>
-          <p class="text-sm text-gray-600 mt-1">View sponsor revenue, clicks, and enter physical metrics</p>
-          <div id="sponsor-tracking" class="mt-3 text-sm"></div>
-        </div>
-
-        <div class="bg-white p-4 rounded shadow-sm">
-          <h3 class="font-medium">Local Data Log</h3>
-          <p class="text-sm text-gray-600 mt-1">View localStorage for debugging</p>
-          <div class="mt-3">
-            <button id="refresh-log" class="bg-indigo-600 text-white px-3 py-2 rounded">Refresh Log</button>
-            <button id="clear-local" class="bg-red-600 text-white px-3 py-2 rounded ml-2">Clear localStorage</button>
-            <pre id="local-log" class="mt-3 max-h-48 overflow-auto text-xs bg-gray-50 p-3 rounded"></pre>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <hr class="my-8" />
-
-    <footer class="text-sm text-gray-500 text-center py-6">Replace the CSV placeholders and Firebase config with your project values before deploying.</footer>
-  </main>
-
-  <!-- ENROLL / SPONSOR MODAL -->
-  <div id="modal-enroll" class="fixed inset-0 hidden items-start sm:items-center justify-center modal-backdrop z-40 overflow-auto py-8">
-    <div class="bg-white rounded-lg max-w-3xl w-full p-6 mx-4">
-      <div class="flex items-center justify-between">
-        <h3 class="text-lg font-semibold">Sponsor Enrollment & Ad Configurator</h3>
-        <button id="close-enroll" class="text-gray-500 hover:text-gray-700">&times;</button>
-      </div>
-      <p class="text-sm text-gray-600 mt-2">Configure ad components. Promo SANDHANI10 applies 10% discount. Pricing base read from sheet when available.</p>
-
-      <div class="mt-4 grid gap-6 md:grid-cols-2">
-        <div>
-          <div class="space-y-4">
-            <div class="p-3 bg-gray-50 rounded">
-              <div class="flex items-center justify-between">
-                <div>
-                  <h4 class="font-medium">Drawing Books</h4>
-                  <div class="text-xs text-gray-500">Space (sq.inch), side, quantity</div>
-                </div>
-                <div><label class="inline-flex items-center text-xs"><input id="db-enabled" type="checkbox" class="mr-2" /> Enable</label></div>
-              </div>
-              <div id="db-section" class="mt-3 hidden space-y-2">
-                <div class="grid grid-cols-2 gap-2">
-                  <input id="db-space" type="number" min="1" placeholder="Space (sq.inch)" class="border px-3 py-2 rounded" />
-                  <input id="db-qty" type="number" min="1" placeholder="Quantity" class="border px-3 py-2 rounded" />
-                </div>
-                <select id="db-side" class="border px-3 py-2 rounded w-full">
-                  <option value="front">Front Side (Premium)</option>
-                  <option value="back">Back Side (Standard)</option>
-                </select>
-                <div class="text-xs text-gray-500">Rates loaded from sheet when available; fallback to built-in rates.</div>
-              </div>
-            </div>
-
-            <div class="p-3 bg-gray-50 rounded">
-              <div class="flex items-center justify-between">
-                <div>
-                  <h4 class="font-medium">Bags</h4>
-                  <div class="text-xs text-gray-500">Space (sq.inch) and quantity</div>
-                </div>
-                <div><label class="inline-flex items-center text-xs"><input id="bag-enabled" type="checkbox" class="mr-2" /> Enable</label></div>
-              </div>
-              <div id="bag-section" class="mt-3 hidden space-y-2">
-                <div class="grid grid-cols-2 gap-2">
-                  <input id="bag-space" type="number" min="1" placeholder="Space (sq.inch)" class="border px-3 py-2 rounded" />
-                  <input id="bag-qty" type="number" min="1" placeholder="Quantity" class="border px-3 py-2 rounded" />
-                </div>
-                <div class="text-xs text-gray-500">Rate loaded from sheet when available; fallback used otherwise.</div>
-              </div>
-            </div>
-
-            <div class="p-3 bg-gray-50 rounded">
-              <div class="flex items-center justify-between">
-                <div>
-                  <h4 class="font-medium">Banners</h4>
-                  <div class="text-xs text-gray-500">Placement and quantity</div>
-                </div>
-                <div><label class="inline-flex items-center text-xs"><input id="banner-enabled" type="checkbox" class="mr-2" /> Enable</label></div>
-              </div>
-              <div id="banner-section" class="mt-3 hidden space-y-2">
-                <select id="banner-place" class="border px-3 py-2 rounded w-full"></select>
-                <input id="banner-qty" type="number" min="1" placeholder="Quantity" class="border px-3 py-2 rounded w-full" />
-                <div class="text-xs text-gray-500">Placements and pricing loaded from sheet when available; fallback used otherwise.</div>
-              </div>
-            </div>
-
-            <div class="p-3 bg-gray-50 rounded">
-              <h4 class="font-medium">Promo Code</h4>
-              <input id="promo" placeholder="Enter promo code" class="mt-2 w-full border px-3 py-2 rounded" />
-              <div id="promo-msg" class="text-xs text-green-600 mt-2"></div>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <div class="bg-white p-4 rounded shadow-sm">
-            <h4 class="font-medium">Summary</h4>
-            <div class="mt-3 space-y-2 text-sm">
-              <div class="flex justify-between"><div>Drawing Books</div><div id="sum-db">₹0</div></div>
-              <div class="flex justify-between"><div>Bags</div><div id="sum-bag">₹0</div></div>
-              <div class="flex justify-between"><div>Banners</div><div id="sum-banner">₹0</div></div>
-              <div class="border-t pt-2 mt-2 text-sm">
-                <div class="flex justify-between"><div>Subtotal</div><div id="sum-sub">₹0</div></div>
-                <div class="flex justify-between"><div>Discount</div><div id="sum-discount">-₹0</div></div>
-                <div class="flex justify-between font-semibold text-lg"><div>Payable Total</div><div id="sum-total">₹0</div></div>
-              </div>
-            </div>
-
-            <div class="mt-4">
-              <h4 class="font-medium">Sponsor Details</h4>
-              <input id="sname" placeholder="Sponsor Name" class="mt-2 w-full border px-3 py-2 rounded" />
-              <input id="surl" placeholder="Website or Contact URL (optional)" class="mt-2 w-full border px-3 py-2 rounded" />
-              <input id="slogo" placeholder="Logo image URL (optional)" class="mt-2 w-full border px-3 py-2 rounded" />
-              <div class="flex gap-2 mt-3">
-                <button id="confirm-enroll" class="bg-green-600 text-white px-3 py-2 rounded flex-1">Confirm & Save (Local)</button>
-                <button id="preview-sponsor" class="bg-gray-100 px-3 py-2 rounded">Preview</button>
-              </div>
-              <p class="text-xs text-gray-500 mt-2">Enrollments saved locally after initial load from sheets.</p>
-            </div>
-          </div>
-          <div id="enroll-msg" class="mt-3 text-sm"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Sponsor preview modal -->
-  <div id="modal-preview" class="fixed inset-0 hidden items-center justify-center modal-backdrop z-50">
-    <div class="bg-white rounded-lg p-6 max-w-sm w-full">
-      <div class="flex items-center justify-between">
-        <h4 class="font-medium">Sponsor Preview</h4>
-        <button id="close-preview" class="text-gray-500">&times;</button>
-      </div>
-      <div id="preview-content" class="mt-3"></div>
-    </div>
-  </div>
-
-  <!-- Firebase SDKs -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { colors: { brand: '#1e3a8a', accent: '#10b981' } } }
+    }
+  </script>
+  <!-- Firebase CDN -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+</head>
+<body class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 animate-fadeIn">
 
+  <nav class="sticky top-0 z-40 bg-white/90 dark:bg-gray-900/90 backdrop-blur">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img src="assets/logo.svg" alt="" class="h-8 w-8" />
+        <a href="index.html" class="text-lg font-bold text-brand">Sreejan Sandhani</a>
+      </div>
+      <div class="flex items-center gap-4">
+        <a href="enroll.html" class="text-sm px-3 py-2 rounded bg-brand text-white hover:bg-brand/90 transition-all hover-scale-105">Become a Sponsor</a>
+        <a href="admin.html" class="text-sm px-3 py-2 rounded border border-brand text-brand hover:bg-brand hover:text-white transition-all">Admin</a>
+        <button id="darkToggle" class="text-sm px-3 py-2 rounded border hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">Dark</button>
+        <div id="userInfo" class="text-sm"></div>
+        <button id="signBtn" class="text-sm px-3 py-2 rounded bg-accent text-white hover:bg-accent/80 transition-all">Sign in</button>
+        <button id="signOutBtn" class="hidden text-sm px-3 py-2 rounded border hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">Sign out</button>
+      </div>
+    </div>
+  </nav>
+
+  <header class="max-w-6xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-semibold animate-slideUp">Upcoming Events</h1>
+    <div id="eventsList" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4"></div>
+  </header>
+
+  <section class="max-w-6xl mx-auto px-4 py-8">
+    <div class="flex items-center justify-between">
+      <h2 class="text-2xl font-semibold">Sponsors</h2>
+      <div class="text-sm text-gray-500">Grid updates live</div>
+    </div>
+    <div id="sponsorGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-4"></div>
+  </section>
+
+  <footer class="max-w-6xl mx-auto px-4 py-8 text-sm text-gray-500">
+    © Sreejan Sandhani
+  </footer>
+
+  <script src="scripts/firebase.js"></script>
+  <script src="scripts/sheets.js"></script>
+  <script src="scripts/ui.js"></script>
   <script>
-    /*
-      Firebase-auth + Google Sheets CMS single-file app
-      - Authentication: Firebase Google Sign-In (client)
-      - Master data: fetched read-only from published Google Sheets CSV endpoints
-      - Transactional writes: simulated locally and persisted in localStorage
-      - Replace SHEET_URLS and FIREBASE_CONFIG with your project values before deploying
-    */
+    (async function init() {
+      UI.setDarkToggle();
+      UI.stickyNav();
 
-    /* -------------------------
-       Replace with your Firebase config
-       ------------------------- */
-    const FIREBASE_CONFIG = {
-      apiKey: "AIzaSyDqyk2yluODcOQuBqk1m0dXHQzns0-xfZk",
-      authDomain: "sreejansandhani-7403f.firebaseapp.com",
-      projectId: "sreejansandhani-7403f",
-      appId: "1:238400167639:web:1c42c20d4d56cca3381a92"
-    };
+      window.SS.session = FirebaseAuth.getSession();
+      UI.renderSession();
+      UI.roleGate();
 
-    /* -------------------------
-       Replace these CSV URLs with your published sheet CSV links
-       Required tabs: events, sponsors, enrollments, users (optional), ad_config (optional)
-       ------------------------- */
-    const SHEET_URLS = {
-      events: "https://docs.google.com/spreadsheets/d/e/2PACX-1vR9sYOi5ufLQN--VhNROSY9j6DcfBWAi4XhqLeLHYCvA9nTvxYQ8JwiirZ2p1e7Dsf29LqdVSkaoDqq/pub?gid=0&single=true&output=csv",
-      sponsors: "https://docs.google.com/spreadsheets/d/e/2PACX-1vR9sYOi5ufLQN--VhNROSY9j6DcfBWAi4XhqLeLHYCvA9nTvxYQ8JwiirZ2p1e7Dsf29LqdVSkaoDqq/pub?gid=1808903699&single=true&output=csv",
-      enrollments: "https://docs.google.com/spreadsheets/d/e/2PACX-1vR9sYOi5ufLQN--VhNROSY9j6DcfBWAi4XhqLeLHYCvA9nTvxYQ8JwiirZ2p1e7Dsf29LqdVSkaoDqq/pub?gid=1366142731&single=true&output=csv",
-      users: "https://docs.google.com/spreadsheets/d/e/2PACX-1vR9sYOi5ufLQN--VhNROSY9j6DcfBWAi4XhqLeLHYCvA9nTvxYQ8JwiirZ2p1e7Dsf29LqdVSkaoDqq/pub?gid=1089768309&single=true&output=csv",
-      ad_config: "https://docs.google.com/spreadsheets/d/e/2PACX-1vR9sYOi5ufLQN--VhNROSY9j6DcfBWAi4XhqLeLHYCvA9nTvxYQ8JwiirZ2p1e7Dsf29LqdVSkaoDqq/pub?gid=1886641173&single=true&output=csv"
-    };
-
-    /* -------------------------
-       Fallbacks
-       ------------------------- */
-    const FALLBACK = {
-      events: [{ title: "Sreejan Sandhani Annual Match", date: "2025-11-15", description: "Community health camp and fair", fee: 5000 }],
-      sponsors: [{ id: "s1", name: "Local Grocers", logo: "", url: "", clicks: 0, revenue: 0, metrics: {} }],
-      enrollments: [],
-      users: [],
-      ad_config: [
-        { type: "drawing", key: "premiumRate", value: "12" },
-        { type: "drawing", key: "standardRate", value: "8" },
-        { type: "bag", key: "rate", value: "6" },
-        { type: "banner", key: "Main Stage", value: '{"base":2000,"multiplier":1.5}' },
-        { type: "promo", key: "SANDHANI10", value: "10" }
-      ]
-    };
-
-    /* -------------------------
-       LocalStorage helpers
-       ------------------------- */
-    function lsGet(key, fallback){ try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch(e){ return fallback; } }
-    function lsSet(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
-    function uid(prefix="id"){ return prefix + "_" + Math.random().toString(36).slice(2,9); }
-
-    /* -------------------------
-       App state
-       ------------------------- */
-    const State = {
-      configEvents: [],
-      sponsors: [],
-      enrollments: [],
-      users: [],
-      adConfig: {},
-      currentUser: lsGet("ss_currentUser", null) // stored locally for session continuity
-    };
-
-    /* -------------------------
-       CSV fetcher & parser
-       ------------------------- */
-    async function fetchCSV(url) {
-      const res = await fetch(url, {cache: "no-store"});
-      if (!res.ok) throw new Error("Fetch failed");
-      const text = await res.text();
-      const lines = text.trim().split(/\r?\n/).filter(Boolean);
-      if (lines.length === 0) return [];
-      const headers = lines.shift().split(/,(?=(?:[^"]"[^"]")[^"]$)/).map(h=>h.trim().replace(/^"|"$/g,"").toLowerCase());
-      return lines.map(line=>{
-        const cols = line.split(/,(?=(?:[^"]"[^"]")[^"]$)/).map(c=>c.replace(/^"|"$/g,"").trim());
-        const obj = {};
-        headers.forEach((h,i)=> obj[h] = cols[i] || "");
-        return obj;
+      document.getElementById("signBtn").addEventListener("click", async () => {
+        await FirebaseAuth.signIn();
+        UI.renderSession();
+        UI.roleGate();
       });
-    }
-
-    async function safeFetch(url, fallback){
-      if (!url || url.includes("REPLACE_")) return fallback;
-      try {
-        const rows = await fetchCSV(url);
-        return rows.length ? rows : fallback;
-      } catch(e) {
-        return fallback;
-      }
-    }
-
-    function tryParse(s){
-      if (!s) return {};
-      try { return JSON.parse(s); } catch(e){ return {}; }
-    }
-
-    /* -------------------------
-       Load sheets and merge local overrides
-       ------------------------- */
-    async function loadAllSheets(){
-      setStatus("Loading configuration from Google Sheets...");
-      try {
-        const [evRows, spRows, enRows, userRows, adRows] = await Promise.all([
-          safeFetch(SHEET_URLS.events, FALLBACK.events),
-          safeFetch(SHEET_URLS.sponsors, FALLBACK.sponsors),
-          safeFetch(SHEET_URLS.enrollments, FALLBACK.enrollments),
-          safeFetch(SHEET_URLS.users, FALLBACK.users),
-          safeFetch(SHEET_URLS.ad_config, FALLBACK.ad_config)
-        ]);
-
-        State.configEvents = evRows.map(r => ({ title: r.title || r.name || "Untitled", date: r.date || "", description: r.description || "", fee: Number(r.fee) || 0 }));
-
-        State.sponsors = spRows.map(r => ({ id: r.id || uid("s"), name: r.name || "Unnamed", logo: r.logo || "", url: r.url || "", clicks: Number(r.clicks) || 0, revenue: Number(r.revenue) || 0, metrics: tryParse(r.metrics_json || r.metrics) }));
-
-        State.enrollments = enRows.map(r => ({ id: r.id || uid("e"), sponsorId: r.sponsor_id || r.sponsorId || null, sponsorName: r.sponsor_name || r.sponsor || "", createdBy: r.created_by || "", createdAt: r.created_at || "", items: tryParse(r.items_json || r.items), pricing: tryParse(r.pricing_json || r.pricing) }));
-
-        State.users = userRows.map(r => ({ email: (r.email||"").toLowerCase(), password: r.password || r.pass || "", role: (r.role||"").toLowerCase(), name: r.name || r.fullname || r.email || "" }));
-
-        State.adConfig = { drawing: {}, banners: {}, bagRate: null, promoCodes: {} };
-        adRows.forEach(r=>{
-          const type = (r.type||"").toLowerCase();
-          const key = r.key || r.name || "";
-          const val = r.value || r.val || "";
-          if (type === "drawing") State.adConfig.drawing[key] = Number(val);
-          else if (type === "bag") State.adConfig.bagRate = Number(val);
-          else if (type === "banner") {
-            try { State.adConfig.banners[key] = JSON.parse(val); } catch(e){ State.adConfig.banners[key] = { base: Number(val)||0, multiplier:1 }; }
-          } else if (type === "promo") State.adConfig.promoCodes[key.toUpperCase()] = { percent: Number(val) || 0 };
-        });
-
-        // sensible defaults
-        if (!State.adConfig.drawing.premiumRate) State.adConfig.drawing.premiumRate = 12;
-        if (!State.adConfig.drawing.standardRate) State.adConfig.drawing.standardRate = 8;
-        if (!State.adConfig.bagRate) State.adConfig.bagRate = 6;
-        if (!Object.keys(State.adConfig.banners).length) State.adConfig.banners = { "Main Stage": {base:2000,multiplier:1.5}, "Road Side": {base:800,multiplier:1} };
-        if (!Object.keys(State.adConfig.promoCodes).length) State.adConfig.promoCodes["SANDHANI10"] = { percent: 10 };
-
-        // merge local overrides saved by this app (writes are local only)
-        const overrides = lsGet("ss_local_overrides", {});
-        if (Array.isArray(overrides.sponsors) && overrides.sponsors.length) {
-          // override by id: replace sheet sponsor entry with local override if ids match, else append
-          overrides.sponsors.forEach(o=>{
-            const idx = State.sponsors.findIndex(s=>s.id===o.id);
-            if (idx >= 0) State.sponsors[idx] = o; else State.sponsors.push(o);
-          });
-        }
-        if (Array.isArray(overrides.enrollments) && overrides.enrollments.length) {
-          overrides.enrollments.forEach(o=>{
-            const idx = State.enrollments.findIndex(e=>e.id===o.id);
-            if (idx >= 0) State.enrollments[idx] = o; else State.enrollments.push(o);
-          });
-        }
-        if (Array.isArray(overrides.users) && overrides.users.length) {
-          overrides.users.forEach(o=>{
-            const idx = State.users.findIndex(u=>u.email===o.email && u.role===o.role);
-            if (idx >= 0) State.users[idx] = o; else State.users.push(o);
-          });
-        }
-
-        lsSet("ss_master_loaded_at", new Date().toISOString());
-        renderAll();
-        setStatus("Sheets loaded");
-      } catch(e){
-        setStatus("Failed loading sheets. Using fallback data.");
-        State.configEvents = FALLBACK.events;
-        State.sponsors = FALLBACK.sponsors;
-        State.enrollments = FALLBACK.enrollments;
-        State.users = FALLBACK.users;
-        State.adConfig = { drawing: { premiumRate:12, standardRate:8 }, bagRate:6, banners: { "Main Stage": {base:2000,multiplier:1.5} }, promoCodes: { "SANDHANI10": {percent:10} } };
-        renderAll();
-      }
-    }
-
-    /* -------------------------
-       Rendering
-       ------------------------- */
-    function renderAll(){ renderEvents(); renderSponsors(); updateAuthUI(); renderSponsorTracking(); }
-    function renderEvents(){
-      const container = document.getElementById("events");
-      container.innerHTML = "";
-      State.configEvents.forEach(ev=>{
-        const card = document.createElement("div");
-        card.className = "bg-white p-4 rounded shadow-sm";
-        card.innerHTML = `
-          <div class="flex items-start justify-between">
-            <div>
-              <div class="font-semibold">${escapeHtml(ev.title)}</div>
-              <div class="text-xs text-gray-500">${escapeHtml(ev.date)}</div>
-              <div class="text-sm mt-2">${escapeHtml(ev.description)}</div>
-            </div>
-            <div class="text-right">
-              <div class="text-indigo-600 font-semibold">₹${Number(ev.fee).toLocaleString()}</div>
-              <div class="text-xs text-gray-500">Event Fee</div>
-            </div>
-          </div>
-        `;
-        container.appendChild(card);
-      });
-    }
-    function renderSponsors(){
-      const grid = document.getElementById("sponsor-grid");
-      grid.innerHTML = "";
-      if (!State.sponsors || !State.sponsors.length) {
-        grid.innerHTML = <div class="text-sm text-gray-500 col-span-full">No sponsors available. Use enrollment to add sponsors locally.</div>;
-        return;
-      }
-      State.sponsors.forEach(s=>{
-        const el = document.createElement("div");
-        el.className = "bg-white p-3 rounded shadow-sm flex flex-col items-center text-center";
-        const logoHtml = s.logo ? <img src="${escapeAttr(s.logo)}" alt="${escapeAttr(s.name)}" class="h-16 object-contain mb-2" /> : <div class="h-16 w-32 bg-gray-100 flex items-center justify-center mb-2 rounded text-xs text-gray-500">No Logo</div>;
-        el.innerHTML = `
-          <div class="w-full">${logoHtml}</div>
-          <div class="font-semibold text-sm">${escapeHtml(s.name)}</div>
-          <div class="text-xs text-gray-500 mt-1">Clicks: <span class="s-clicks">${s.clicks||0}</span></div>
-          <div class="mt-3 w-full">
-            <button class="btn-visit bg-indigo-600 text-white px-3 py-1 rounded w-full">Visit / Click</button>
-          </div>
-        `;
-        const btn = el.querySelector(".btn-visit");
-        btn.addEventListener("click", ()=>{
-          incrementClick(s.id);
-          if (s.url) window.open(s.url, "_blank");
-        });
-        grid.appendChild(el);
-      });
-    }
-    function renderSponsorTracking(){
-      const container = document.getElementById("sponsor-tracking");
-      container.innerHTML = "";
-      if (!State.sponsors || !State.sponsors.length) { container.innerHTML = "<div class='text-xs text-gray-500'>No sponsors to track.</div>"; return; }
-      const list = State.sponsors.map(s=>{
-        return `<div class="border rounded p-2 mb-2">
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="font-semibold">${escapeHtml(s.name)}</div>
-              <div class="text-xs text-gray-500">Clicks: ${Number(s.clicks||0)} · Revenue: ₹${Number(s.revenue||0).toLocaleString()}</div>
-            </div>
-            <div class="text-right">
-              <input data-id="${s.id}" placeholder="Banner Views" class="metric-input border px-2 py-1 rounded text-sm w-28" />
-              <button data-id="${s.id}" class="metric-save ml-2 bg-indigo-600 text-white px-2 py-1 rounded text-sm">Save</button>
-            </div>
-          </div>
-        </div>`;
-      }).join("");
-      container.innerHTML = list;
-      container.querySelectorAll(".metric-save").forEach(btn=>{
-        btn.addEventListener("click", (e)=>{
-          const id = e.target.getAttribute("data-id");
-          const input = container.querySelector(.metric-input[data-id="${id}"]);
-          const val = Number(input.value||0);
-          const s = State.sponsors.find(x=>x.id===id);
-          if (s) {
-            s.metrics = s.metrics || {};
-            s.metrics.bannerViews = val;
-            saveLocalOverride('sponsors', [s]);
-            lsSet("ss_master_sponsors", State.sponsors);
-            renderSponsorTracking();
-            alert("Metric saved locally.");
-          }
-        });
-      });
-    }
-
-    /* -------------------------
-       Click handling & local persistence
-       ------------------------- */
-    function incrementClick(sponsorId){
-      const s = State.sponsors.find(x=>x.id===sponsorId);
-      if (!s) return;
-      s.clicks = (Number(s.clicks)||0) + 1;
-      saveLocalOverride('sponsors', [s]);
-      lsSet("ss_master_sponsors", State.sponsors);
-      renderSponsors();
-      renderSponsorTracking();
-    }
-    function saveLocalOverride(type, items){
-      const overrides = lsGet("ss_local_overrides", {});
-      if (!overrides[type]) overrides[type] = [];
-      items.forEach(it=>{
-        const idx = overrides[type].findIndex(x=>x.id===it.id);
-        if (idx >= 0) overrides[type][idx] = it; else overrides[type].push(it);
-      });
-      lsSet("ss_local_overrides", overrides);
-    }
-
-    /* -------------------------
-       Enrollment modal & pricing (sheet-driven rates)
-       ------------------------- */
-    function initEnrollUI(){
-      const btnEnroll = document.getElementById("btn-enroll");
-      const modal = document.getElementById("modal-enroll");
-      const close = document.getElementById("close-enroll");
-      const dbEnabled = document.getElementById("db-enabled");
-      const bagEnabled = document.getElementById("bag-enabled");
-      const bannerEnabled = document.getElementById("banner-enabled");
-      const dbSection = document.getElementById("db-section");
-      const bagSection = document.getElementById("bag-section");
-      const bannerSection = document.getElementById("banner-section");
-      const dbSpace = document.getElementById("db-space");
-      const dbQty = document.getElementById("db-qty");
-      const dbSide = document.getElementById("db-side");
-      const bagSpace = document.getElementById("bag-space");
-      const bagQty = document.getElementById("bag-qty");
-      const bannerPlace = document.getElementById("banner-place");
-      const bannerQty = document.getElementById("banner-qty");
-      const promo = document.getElementById("promo");
-      const promoMsg = document.getElementById("promo-msg");
-      const sumDb = document.getElementById("sum-db");
-      const sumBag = document.getElementById("sum-bag");
-      const sumBanner = document.getElementById("sum-banner");
-      const sumSub = document.getElementById("sum-sub");
-      const sumDiscount = document.getElementById("sum-discount");
-      const sumTotal = document.getElementById("sum-total");
-      const confirm = document.getElementById("confirm-enroll");
-      const previewBtn = document.getElementById("preview-sponsor");
-      const previewModal = document.getElementById("modal-preview");
-      const previewContent = document.getElementById("preview-content");
-      const closePreview = document.getElementById("close-preview");
-
-      function populateBannerOptions(){
-        bannerPlace.innerHTML = "";
-        const banners = State.adConfig.banners || {};
-        Object.keys(banners).forEach(k=>{
-          const opt = document.createElement("option");
-          opt.value = k;
-          const b = banners[k];
-          opt.textContent = ${k} — Base ₹${Number(b.base).toLocaleString()} ×${b.multiplier};
-          bannerPlace.appendChild(opt);
-        });
-      }
-      populateBannerOptions();
-
-      dbEnabled.addEventListener("change", ()=> toggleSection(dbEnabled, dbSection));
-      bagEnabled.addEventListener("change", ()=> toggleSection(bagEnabled, bagSection));
-      bannerEnabled.addEventListener("change", ()=> toggleSection(bannerEnabled, bannerSection));
-      function toggleSection(cb, section){ if (cb.checked) section.classList.remove("hidden"); else section.classList.add("hidden"); recalcAll(); }
-
-      function getRates(){ const ad = State.adConfig || {}; return { drawing: ad.drawing || { premiumRate:12, standardRate:8 }, bagRate: ad.bagRate || 6, banners: ad.banners || {}, promoCodes: ad.promoCodes || {} }; }
-
-      function calcDrawing(){ if (!dbEnabled.checked) return 0; const space=Number(dbSpace.value)||0, qty=Number(dbQty.value)||0; if(!space||!qty) return 0; const side=dbSide.value; const rates=getRates(); const rate = (side==='front') ? (rates.drawing.premiumRate||12) : (rates.drawing.standardRate||8); return +(space * qty * rate); }
-      function calcBags(){ if (!bagEnabled.checked) return 0; const space=Number(bagSpace.value)||0, qty=Number(bagQty.value)||0; if(!space||!qty) return 0; const rates=getRates(); return +(space * qty * (rates.bagRate||6)); }
-      function calcBanners(){ if (!bannerEnabled.checked) return 0; const place=bannerPlace.value, qty=Number(bannerQty.value)||0; if(!place||!qty) return 0; const b=(State.adConfig.banners||{})[place]; if(!b) return 0; return +(Number(b.base||0) * Number(b.multiplier||1) * qty); }
-
-      function recalcAll(){
-        const db=calcDrawing(), bag=calcBags(), ban=calcBanners();
-        const sub=+(db+bag+ban);
-        const promoCode=(promo.value||"").trim().toUpperCase();
-        const promoDefs = (State.adConfig.promoCodes||{});
-        let discount=0;
-        if (promoCode && promoDefs[promoCode]) { discount = +(sub * (Number(promoDefs[promoCode].percent||0)/100)); promoMsg.textContent = Promo ${promoCode} applied: ${promoDefs[promoCode].percent}%; } else promoMsg.textContent = promoCode ? "Invalid promo code" : "";
-        const total = +(sub - discount);
-        sumDb.textContent = ₹${db.toLocaleString()}; sumBag.textContent = ₹${bag.toLocaleString()}; sumBanner.textContent = ₹${ban.toLocaleString()};
-        sumSub.textContent = ₹${sub.toLocaleString()}; sumDiscount.textContent = -₹${discount.toLocaleString()}; sumTotal.textContent = ₹${total.toLocaleString()};
-        return { db, bag, ban, sub, discount, total, promoCode };
-      }
-
-      ["input","change"].forEach(ev=>{ [dbSpace, dbQty, dbSide, bagSpace, bagQty, bannerPlace, bannerQty, promo].forEach(inp=> inp.addEventListener(ev, recalcAll)); });
-
-      btnEnroll.addEventListener("click", ()=> {
-        if (!State.currentUser) { alert("Please sign in with Google to enroll as Sponsor/Participant."); return; }
-        document.getElementById("enroll-msg").textContent = "";
-        modal.classList.remove("hidden"); modal.classList.add("flex");
-        recalcAll();
-      });
-      close.addEventListener("click", ()=> { modal.classList.add("hidden"); modal.classList.remove("flex"); });
-
-      previewBtn.addEventListener("click", ()=>{
-        const sums = recalcAll();
-        const sName = document.getElementById("sname").value || "Unnamed Sponsor";
-        const sLogo = document.getElementById("slogo").value || "";
-        const sUrl = document.getElementById("surl").value || "";
-        previewContent.innerHTML = `
-          <div class="text-sm">
-            <div class="font-semibold">${escapeHtml(sName)}</div>
-            <div class="text-xs text-gray-500 mt-1">Website: ${escapeHtml(sUrl)}</div>
-            <div class="mt-2">Drawing Books: ₹${sums.db.toLocaleString()}</div>
-            <div>Bags: ₹${sums.bag.toLocaleString()}</div>
-            <div>Banners: ₹${sums.ban.toLocaleString()}</div>
-            <div class="mt-2 font-semibold">Total: ₹${sums.total.toLocaleString()}</div>
-          </div>
-        `;
-        previewModal.classList.remove("hidden"); previewModal.classList.add("flex");
-      });
-      closePreview.addEventListener("click", ()=>{ previewModal.classList.add("hidden"); previewModal.classList.remove("flex"); });
-
-      confirm.addEventListener("click", ()=>{
-        const sums = recalcAll();
-        const sponsorName = document.getElementById("sname").value.trim();
-        if (!sponsorName) { document.getElementById("enroll-msg").textContent = "Please provide Sponsor Name."; return; }
-        if (!confirm("Confirm save: enrollment will be stored locally in your browser only.")) return;
-        const sponsor = { id: uid("s"), name: sponsorName, logo: document.getElementById("slogo").value.trim(), url: document.getElementById("surl").value.trim(), clicks: 0, revenue: sums.total, metrics: {} };
-        State.sponsors.push(sponsor);
-        saveLocalOverride('sponsors', [sponsor]);
-        const enrollment = { id: uid("e"), sponsorId: sponsor.id, sponsorName: sponsor.name, createdBy: State.currentUser ? State.currentUser.email : "guest", createdAt: new Date().toISOString(), items: { drawing: dbEnabled.checked ? { space: Number(dbSpace.value||0), qty: Number(dbQty.value||0), side: dbSide.value } : null, bag: bagEnabled.checked ? { space: Number(bagSpace.value||0), qty: Number(bagQty.value||0) } : null, banner: bannerEnabled.checked ? { place: bannerPlace.value, qty: Number(bannerQty.value||0) } : null }, pricing: { subtotal: sums.sub, discount: sums.discount, total: sums.total, promo: sums.promoCode } };
-        State.enrollments.push(enrollment);
-        saveLocalOverride('enrollments', [enrollment]);
-        document.getElementById("enroll-msg").textContent = Enrollment saved locally. Sponsor ID: ${sponsor.id};
-        renderSponsors();
-        renderSponsorTracking();
+      document.getElementById("signOutBtn").addEventListener("click", async () => {
+        await FirebaseAuth.signOut();
+        UI.renderSession();
+        UI.roleGate();
       });
 
-      window.addEventListener("adConfigUpdated", populateBannerOptions);
-    }
+      await UI.loadUsersRoleMap();
+      window.SS.events = await Sheets.get("events");
+      window.SS.sponsors = await Sheets.get("sponsors");
 
-    /* -------------------------
-       Admin controls
-       ------------------------- */
-    function initAdminControls(){
-      const feeInput = document.getElementById("event-fee");
-      const saveFee = document.getElementById("save-fee");
-      const resetCfg = document.getElementById("reset-cfg");
-      const refreshLog = document.getElementById("refresh-log");
-      const clearLocal = document.getElementById("clear-local");
-
-      feeInput.value = (State.configEvents[0] && Number(State.configEvents[0].fee)) || 0;
-      saveFee.onclick = ()=> {
-        if (!State.currentUser || !(State.currentUserRole === "founder" || State.currentUserRole === "manager")) { alert("Only Founder or Manager allowed to save fee (simulated)."); return; }
-        const newFee = Number(feeInput.value) || 0;
-        if (!State.configEvents[0]) State.configEvents[0] = {};
-        State.configEvents[0].fee = newFee;
-        lsSet("ss_admin_override", { updatedAt: new Date().toISOString(), fee: newFee });
-        alert("Event Fee updated locally (simulation).");
-        renderEvents();
-      };
-
-      resetCfg.onclick = async ()=> { await loadAllSheets(); feeInput.value = (State.configEvents[0] && Number(State.configEvents[0].fee)) || 0; };
-      refreshLog.onclick = ()=> showLocalLog();
-      clearLocal.onclick = ()=> {
-        if (!confirm("Clear ALL localStorage for this origin? This will remove local overrides and session data.")) return;
-        localStorage.removeItem("ss_local_overrides"); localStorage.removeItem("ss_currentUser"); localStorage.removeItem("ss_master_sponsors"); localStorage.removeItem("ss_master_enrollments");
-        alert("Local overrides cleared. Reloading page.");
-        location.reload();
-      };
-      showLocalLog();
-      renderSponsorTracking();
-    }
-    function showLocalLog(){ const localLog = document.getElementById("local-log"); const dump = {}; for (let i=0;i<localStorage.length;i++){ const key = localStorage.key(i); try { dump[key] = JSON.parse(localStorage.getItem(key)); } catch(e){ dump[key] = localStorage.getItem(key); } } localLog.textContent = JSON.stringify(dump, null, 2); }
-
-    /* -------------------------
-       Helpers & UI glue
-       ------------------------- */
-    function escapeHtml(s){ if (!s && s!==0) return ""; return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-    function escapeAttr(s){ return escapeHtml(s); }
-    function setStatus(msg){ const el = document.getElementById("cfg-last-updated"); if(el) el.textContent = msg; }
-
-    /* -------------------------
-       Firebase Auth setup
-       - Uses Firebase compat SDK for simplicity in single-file
-       - Replace FIREBASE_CONFIG above with your project's config
-       ------------------------- */
-    let firebaseApp = null;
-    let auth = null;
-    let currentFirebaseUser = null;
-    // derived role mapping: you can control admin mapping by email in code or via users sheet
-    const EMAIL_ROLE_MAP = { "founder@ss.com": "founder", "manager@ss.com": "manager", "volunteer@ss.com": "volunteer" };
-
-    function initFirebaseAuth(){
-      try {
-        firebaseApp = firebase.initializeApp(FIREBASE_CONFIG);
-        auth = firebase.auth();
-      } catch(e) {
-        console.warn("Firebase init failed", e);
-        setStatus("Firebase not configured.");
-        return;
-      }
-
-      // Sign-in button (Google)
-      const btnLogin = document.getElementById("btn-login");
-      btnLogin.addEventListener("click", ()=> {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider).catch(err=> { alert("Sign-in failed: " + err.message); });
-      });
-
-      // auth state listener
-      auth.onAuthStateChanged(user => {
-        currentFirebaseUser = user;
-        if (user) {
-          // derive role from users sheet if present, else from EMAIL_ROLE_MAP, else 'participant' by default
-          const email = (user.email || "").toLowerCase();
-          const sheetUser = (State.users || []).find(u => (u.email||"").toLowerCase() === email);
-          const role = sheetUser ? (sheetUser.role || "participant") : (EMAIL_ROLE_MAP[email] || "participant");
-          State.currentUser = { uid: user.uid, email: email, name: user.displayName || email.split("@")[0], role };
-          lsSet("ss_currentUser", State.currentUser);
-          updateAuthUI();
-        } else {
-          State.currentUser = null;
-          lsSet("ss_currentUser", null);
-          updateAuthUI();
-        }
-      });
-    }
-
-    function signOutFirebase(){
-      if (!auth) return;
-      auth.signOut().then(()=>{ State.currentUser = null; lsSet("ss_currentUser", null); updateAuthUI(); });
-    }
-
-    function updateAuthUI(){
-      const btnLogin = document.getElementById("btn-login");
-      const btnEnroll = document.getElementById("btn-enroll");
-      const adminArea = document.getElementById("admin-area");
-
-      if (State.currentUser) {
-        btnLogin.textContent = ${State.currentUser.name} · ${State.currentUser.role};
-        btnLogin.classList.add("bg-gray-100","border-gray-300","text-gray-700");
-        // add sign out action on click
-        btnLogin.onclick = ()=> { if (confirm("Sign out?")) signOutFirebase(); };
-        btnEnroll.classList.remove("hidden");
-      } else {
-        btnLogin.textContent = Sign in with Google;
-        btnLogin.classList.remove("bg-gray-100","border-gray-300","text-gray-700");
-        btnLogin.onclick = null;
-        btnEnroll.classList.add("hidden");
-      }
-
-      const role = State.currentUser ? State.currentUser.role : null;
-      // show admin area for founder/manager only
-      if (role === "founder" || role === "manager") {
-        adminArea.classList.remove("hidden");
-        // save a quick accessor
-        State.currentUserRole = role;
-        initAdminControls();
-      } else {
-        adminArea.classList.add("hidden");
-      }
-    }
-
-    /* -------------------------
-       Bootstrap
-       ------------------------- */
-    (function bootstrap(){
-      // Initialize Firebase UI and Sheets loading
-      initFirebaseAuth();
-      loadAllSheets().then(()=> {
-        initEnrollUI();
-        // small interval refresh for live UI updates from local operations
-        setInterval(()=>{ renderSponsors(); }, 3000);
-      });
-
-      // wire preview close
-      document.getElementById("close-preview").addEventListener("click", ()=> {
-        document.getElementById("modal-preview").classList.add("hidden"); document.getElementById("modal-preview").classList.remove("flex");
-      });
+      UI.renderEvents();
+      UI.renderSponsors();
+      UI.liveRefresh();
+      UI.debugConsole();
     })();
-
-    // Expose minimal debug
-    window.SS = { State, SHEET_URLS, FIREBASE_CONFIG, lsGet, lsSet };
   </script>
 </body>
 </html>
