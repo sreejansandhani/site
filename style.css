@@ -77,23 +77,24 @@ ul {
   padding: 1rem 0;
 }
 .logo a {
-  display: flex;
-  align-items: center;
-  gap: 10px; /* space between logo and text */
+  display: flex;              /* put image + text side by side */
+  align-items: center;        /* vertically center them */
+  gap: 8px;                   /* space between logo and text */
   font-family: var(--font-heading);
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: bold;
   color: var(--color-primary);
 }
 
 .logo img {
-  height: 40px;   /* adjust size as needed */
-  width: auto;
+  height: 32px;               /* smaller logo size */
+  width: auto;                /* keep proportions */
   display: block;
 }
 
 .logo-text {
-  white-space: nowrap; /* prevents wrapping on small screens */
+  line-height: 1;             /* keeps text aligned with logo */
+  white-space: nowrap;        /* prevents wrapping */
 }
 .nav-links {
   display: flex;
