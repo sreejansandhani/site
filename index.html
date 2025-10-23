@@ -11,14 +11,15 @@
   <!-- ===== HEADER / NAVBAR ===== -->
   <header class="header sticky">
     <div class="container nav-container">
-        <div class="logo">
-          <a href="index.html">
-            <img src="logo.png" alt="Sreejan Sandhani Logo" />
-            <span class="logo-text">Sreejan Sandhani</span>
-          </a>
-        </div>
+      <div class="logo">
+        <a href="index.html">
+          <img src="logo.png" alt="Sreejan Sandhani Logo" />
+          <span class="logo-text">Sreejan Sandhani</span>
+        </a>
+      </div>
+  
       <nav class="navbar">
-        <ul class="nav-links">
+        <ul class="nav-links" id="primaryNav">
           <li><a href="index.html" class="active">Home</a></li>
           <li><a href="events.html">Events</a></li>
           <li><a href="gallery.html">Gallery</a></li>
@@ -26,9 +27,10 @@
           <li><a href="contact.html">Contact</a></li>
           <li><a href="login.html" class="btn-login">Login / Sign Up</a></li>
         </ul>
-        <div class="hamburger">
+  
+        <button class="hamburger" aria-label="Menu" aria-controls="primaryNav" aria-expanded="false">
           <span></span><span></span><span></span>
-        </div>
+        </button>
       </nav>
     </div>
   </header>
