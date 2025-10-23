@@ -77,15 +77,23 @@ ul {
   padding: 1rem 0;
 }
 .logo a {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* space between logo and text */
   font-family: var(--font-heading);
   font-size: 1.5rem;
   font-weight: bold;
   color: var(--color-primary);
 }
+
 .logo img {
-  height: 50px;   /* adjust as needed */
+  height: 40px;   /* adjust size as needed */
   width: auto;
   display: block;
+}
+
+.logo-text {
+  white-space: nowrap; /* prevents wrapping on small screens */
 }
 .nav-links {
   display: flex;
