@@ -82,6 +82,11 @@ ul {
   font-weight: bold;
   color: var(--color-primary);
 }
+.logo img {
+  height: 50px;   /* adjust as needed */
+  width: auto;
+  display: block;
+}
 .nav-links {
   display: flex;
   gap: 1.5rem;
