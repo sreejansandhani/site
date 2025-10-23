@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sponsor Enrollment — Sreejan Sandhani</title>
+  <link href="assets/styles.css" rel="stylesheet" />
+  <link href="assets/animations.css" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+</head>
+<body class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 animate-fadeIn">
+  <nav class="sticky top-0 z-40 bg-white/90 dark:bg-gray-900/90 backdrop-blur">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="index.html" class="text-lg font-bold text-brand">Sreejan Sandhani</a>
+      <div class="flex items-center gap-3">
+        <button id="darkToggle" class="text-sm px-3 py-2 rounded border hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">Dark</button>
+        <div id="userInfo" class="text-sm"></div>
+        <button id="signBtn" class="text-sm px-3 py-2 rounded bg-accent text-white hover:bg-accent/80 transition-all">Sign in</button>
+        <button id="signOutBtn" class="hidden text-sm px-3 py-2 rounded border hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">Sign out</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-4xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-semibold animate-slideUp">Sponsorship Enrollment</h1>
+
+    <form id="enrollForm" class="mt-6 space-y-6">
+      <div class="grid sm:grid-cols-2 gap-6">
+        <div class="card rounded-lg bg-white dark:bg-gray-800 p-4 shadow">
+          <div class="font-medium mb-2">Drawing Books</div>
+          <div class="space-y-3">
+            <div>
+              <label class="text-sm">Side</label>
+              <select id="dbSide" class="mt-1 w-full rounded border p-2">
+                <option>Front</option>
+                <option>Back</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-sm">Quantity</label>
+              <input id="dbQty" type="number" min="0" value="0" class="mt-1 w-full rounded border p-2" />
+            </div>
+            <button type="button" id="addDb" class="mt-2 text-sm px-3 py-2 rounded bg-brand text-white hover:bg-brand/90 transition-all hover-scale-105">Add</button>
+          </div>
+        </div>
+
+        <div class="card rounded-lg bg-white dark:bg-gray-800 p-4 shadow">
+          <div class="font-medium mb-2">Bags</div>
+          <div class="space-y-3">
+            <div>
+              <label class="text-sm">Space</label>
+              <input id="bagSpace" type="text" placeholder="Logo placement" class="mt-1 w-full rounded border p-2" />
+            </div>
+            <div>
+              <label class="text-sm">Quantity</label>
+              <input id="bagQty" type="number" min="0" value="0" class="mt-1 w-full rounded border p-2" />
+            </div>
+            <button type="button" id="addBag" class="mt-2 text-sm px-3 py-2 rounded bg-brand text-white hover:bg-brand/90 transition-all hover-scale-105">Add</button>
+          </div>
+        </div>
+
+        <div class="card rounded-lg bg-white dark:bg-gray-800 p-4 shadow">
+          <div class="font-medium mb-2">Banners</div>
+          <div class="space-y-3">
+            <div>
+              <label class="text-sm">Placement</label>
+              <select id="bannerPlacement" class="mt-1 w-full rounded border p-2">
+                <option>Entrance</option>
+                <option>Stage</option>
+                <option>Corridor</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-sm">Quantity</label>
+              <input id="bannerQty" type="number" min="0" value="0" class="mt-1 w-full rounded border p-2" />
+            </div>
+            <button type="button" id="addBanner" class="mt-2 text-sm px-3 py-2 rounded bg-brand text-white hover:bg-brand/90 transition-all hover-scale-105">Add</button>
+          </div>
+        </div>
+
+        <div class="card rounded-lg bg-white dark:bg-gray-800 p-4 shadow">
+          <div class="font-medium mb-2">Promo code</div>
+          <div class="flex gap-2">
+            <input id="promoCode" type="text" placeholder="SANDHANI10" class="w-full rounded border p-2" />
+            <button type="button" id="applyPromo" class="text-sm px-3 py-2 rounded border hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">Apply</button>
+          </div>
+          <div id="promoStatus" class="mt-2 text-sm text-gray-500"></div>
+        </div>
+      </div>
+
+      <div class="card rounded-lg bg-white dark:bg-gray-800 p-4 shadow">
+        <div class="font-medium mb-2">Sponsor details</div>
+        <div class="grid sm:grid-cols-3 gap-4">
+          <input id="sponsorName" class="rounded border p-2" placeholder="Sponsor name" />
+          <input id="sponsorLogo" class="rounded border p-2" placeholder="Logo URL" />
+          <input id="sponsorUrl" class="rounded border p-2" placeholder="Website URL" />
+        </div>
+      </div>
+
+      <div class="card rounded-lg bg-white dark:bg-gray-800 p-4 shadow">
+        <div class="font-medium mb-2">Live summary</div>
+        <ul id="lineItems" class="text-sm text-gray-600 dark:text-gray-300 space-y-1"></ul>
+        <div class="mt-3 text-sm">
+          <div>Subtotal: <span id="subtotal">0</span></div>
+          <div>Discount: <span id="discount">0</span></div>
+          <div class="font-semibold">Total: <span id="total">0</span></div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button type="submit" class="text-sm px-4 py-2 rounded bg-accent text-white hover:bg-accent/80 transition-all hover-scale-105">Save locally</button>
+        <a href="index.html" class="text-sm px-4 py-2 rounded border hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">Back to sponsors</a>
+      </div>
+    </form>
+  </main>
+
+  <script src="scripts/firebase.js"></script>
+  <script src="scripts/sheets.js"></script>
+  <script src="scripts/pricing.js"></script>
+  <script src="scripts/ui.js"></script>
+  <script>
+    (function init() {
+      UI.setDarkToggle();
+
+      window.SS.session = FirebaseAuth.getSession();
+      UI.renderSession();
+
+      document.getElementById("signBtn").addEventListener("click", async () => {
+        await FirebaseAuth.signIn();
+        UI.renderSession();
+      });
+      document.getElementById("signOutBtn").addEventListener("click", async () => {
+        await FirebaseAuth.signOut();
+        UI.renderSession();
+      });
+
+      const state = { drawingBooks: [], bags: [], banners: [], promo: null };
+
+      const refreshSummary = () => {
+        const sum = Pricing.calc(state, state.promo);
+        document.getElementById("lineItems").innerHTML =
+          sum.lineItems.map(li => `<li>${li.label}: ${li.amount}</li>`).join("");
+        document.getElementById("subtotal").textContent = sum.subtotal;
+        document.getElementById("discount").textContent = sum.discount;
+        document.getElementById("total").textContent = sum.total;
+      };
+
+      document.getElementById("addDb").addEventListener("click", () => {
+        state.drawingBooks.push({
+          side: document.getElementById("dbSide").value,
+          qty: Number(document.getElementById("dbQty").value || 0)
+        });
+        refreshSummary();
+      });
+
+      document.getElementById("addBag").addEventListener("click", () => {
+        state.bags.push({
+          space: document.getElementById("bagSpace").value,
+          qty: Number(document.getElementById("bagQty").value || 0)
+        });
+        refreshSummary();
+      });
+
+      document.getElementById("addBanner").addEventListener("click", () => {
+        state.banners.push({
+          placement: document.getElementById("bannerPlacement").value,
+          qty: Number(document.getElementById("bannerQty").value || 0)
+        });
+        refreshSummary();
+      });
+
+      document.getElementById("applyPromo").addEventListener("click", () => {
+        const code = document.getElementById("promoCode").value.trim().toUpperCase();
+        state.promo = code || null;
+        document.getElementById("promoStatus").textContent = code ? `Applied: ${code}` : "No promo";
+        refreshSummary();
+      });
+
+      document.getElementById("enrollForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const sName = document.getElementById("sponsorName").value.trim();
+        const sLogo = document.getElementById("sponsorLogo").value.trim();
+        const sUrl = document.getElementById("sponsorUrl").value.trim();
+
+        const createdBy = window.SS.session?.email || "guest";
+        const enrollment = {
+          id: `enr_${Date.now()}`,
+          sponsor_id: `sp_${Date.now()}`,
+          sponsor_name: sName,
+          created_by: createdBy,
+          created_at: new Date().toISOString(),
+          items_json: JSON.stringify(state),
+          pricing_json: JSON.stringify(Pricing.calc(state, state.promo))
+        };
+
+        // Save enrollment locally
+        const raw = localStorage.getItem("SS_ENROLLMENTS");
+        const arr = raw ? JSON.parse(raw) : [];
+        arr.push(enrollment);
+        localStorage.setItem("SS_ENROLLMENTS", JSON.stringify(arr));
+
+        // Also add sponsor locally to grid
+        const sRaw = localStorage.getItem("SS_SPONSORS_LOCAL");
+        const sArr = sRaw ? JSON.parse(sRaw) : [];
+        sArr.push({ id: enrollment.sponsor_id, name: sName, logo: sLogo, url: sUrl });
+        localStorage.setItem("SS_SPONSORS_LOCAL", JSON.stringify(sArr));
+
+        alert("Enrollment saved locally. Sponsor added to grid.");
+        window.location.href = "index.html";
+      });
+
+      refreshSummary();
+    })();
+  </script>
+</body>
+</html>
