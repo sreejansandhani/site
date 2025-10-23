@@ -48,3 +48,5 @@ const Sheets = (() => {
 
   return { get };
 })();
+
+<script src="scripts/fallback.js"></script>
