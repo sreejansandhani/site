@@ -5,13 +5,10 @@
 const hamburger = document.querySelector('.hamburger');
 const navLinks = document.querySelector('.nav-links');
 
-if (hamburger && navLinks) {
-  hamburger.addEventListener('click', () => {
-    const expanded = hamburger.getAttribute('aria-expanded') === 'true';
-    hamburger.setAttribute('aria-expanded', String(!expanded));
-    hamburger.classList.toggle('active');
-    navLinks.classList.toggle('show');
-  });
+hamburger.addEventListener('click', () => {
+  hamburger.classList.toggle('active');
+  navLinks.classList.toggle('show');
+});
 
   // Close menu when clicking a link (mobile UX)
   navLinks.addEventListener('click', (e) => {
